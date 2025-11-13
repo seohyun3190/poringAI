@@ -1,3 +1,8 @@
+/* 기본 글꼴 및 배경 */
+html, body {
+  height: 100%;
+}
+
 body {
   font-size: 1rem;
   margin: 0;
@@ -16,6 +21,38 @@ body {
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
+/* ======= 반응형 추가 ======= */
+/* 모바일(좁은 화면)에서는 풀폭으로 표시 */
+@media (max-width: 991px) {
+  body {
+    display: block;
+    background-color: #fff;
+  }
+  .phone-wrapper {
+    max-width: none;      /* 390px 제한 해제 */
+    box-shadow: none;     /* 그림자 제거 */
+    min-height: 100vh;
+  }
+  .container-fluid {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* 데스크톱(넓은 화면)에서는 가운데 정렬된 폰 뷰처럼 */
+@media (min-width: 992px) {
+  body {
+    display: flex;
+    justify-content: center;
+    background-color: #f8f9fa;
+  }
+  .phone-wrapper {
+    max-width: 390px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
+}
+
+/* ============================= */
 /* 기본 네비게이션 스타일 */
 .navbar-brand {
   font-size: 1.2rem;
@@ -35,6 +72,7 @@ body {
   font-size: 1.1rem;
   display: block;
   padding: 0.75rem 1rem;
+  transition: background-color 0.3s ease;
 }
 
 .offcanvas-body a:hover {
@@ -46,24 +84,12 @@ body {
   transition: transform 0.4s ease-in-out !important;
 }
 
-/* 메뉴 항목에도 부드러운 hover 효과 */
-.offcanvas-body a {
-  text-decoration: none;
-  color: inherit;
-  font-size: 1.1rem;
-  display: block;
-  padding: 0.75rem 1rem;
-  transition: background-color 0.3s ease;
-}
-
-.offcanvas-body a:hover {
-  background-color: #f1f1f1;
-}
 /* 오프캔버스 너비 조정 */
 .offcanvas-end {
   width: 260px !important;  /* 필요시 240~300px 조절 가능 */
 }
 
+/* 브랜드 내부 a 태그 일관 처리 */
 .navbar-brand a {
   text-decoration: none;
   color: inherit;

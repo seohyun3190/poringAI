@@ -1,12 +1,13 @@
-from flask import Blueprint, render_template, request, url_for, session
+from flask import Blueprint, render_template, request, url_for, session, redirect
 from collections import deque
 import time
 import os, json, requests
-from .api.available_bikes import fetch_available_bikes
+from .api import fetch_available_bikes, fetch_available_nearby_bikes
+from datetime import datetime
 
 # 캐시 세팅
 HIST_KEY = "menu1_hist" # Flask session에 저장할 키
-MAX_MSGS = 8            # 최근 N개만 잡기
+MAX_MSGS = 16            # 최근 N개만 잡기
 TTL_SEC = 60 * 30      # 30분 TTL, 0이면 비활성
 
 
@@ -34,14 +35,27 @@ tools = [
         "properties": {
           "hub_name": {
             "type": "string",
-            "description": "허브의 정확한 이름(예: '정문 앞')" ## TODO : 허브 이름 나열해주기
+            "description": "허브의 정확한 이름을 추출해줘. 허브 이름에는 무은재기념관, 학생회관, 환경공학동, 생활관21동, 생활관3동, 생활관12동, 생활관15동, 박태준학술정보관, 친환경소재대학원, 제1실험동, 기계실험동, 가속기IBS가 있어. 지역에는 교사지역, 생활관지역, 인화지역, 가속기&연구실험동이 있어. 교사지역에 있는 허브로는 무은재기념관, 학생회관, 환경공학동이 있어. 생활관지역에는 생활관21동, 생활관3동, 생활관12동, 생활관15동이 있어. 인화지역에 있는 허브는 박태준학술정보관, 친환경소재대학원이 있어. 가속기&연구실험동에 있는 허브는 제1실험동, 기계실험동, 가속기IBS가 있어." # 자동으로 db에서 허브 이름 가져오는 시스템이 필요할듯
           }
         },
         "required": ["hub_name"]
       }
     }
+  }, {
+    "type": "function",
+    "function": {
+      "name": "get_available_nearby_bikes",
+      "description": "자신 근처에 있는 허브의 이용가능 자전거 수를 조회한다."
+    }
   }
 ]
+
+@bp.app_template_filter('hm')
+def hm(ts):
+    try:
+        return datetime.fromtimestamp(int(ts)).strftime('%H:%M')
+    except Exception:
+        return ''
 
 @bp.route('/', methods=["GET", "POST"])
 def menu1():
@@ -51,6 +65,9 @@ def menu1():
 
   if request.method == "POST":
     question = (request.form.get("question") or "").strip()
+    latitude = request.form.get("latitude")
+    longitude = request.form.get("longitude")
+
     if question:
       if USE_MOCK or client is None:
         # MOCK 모드: 허브 이름 고정 예시
@@ -69,7 +86,6 @@ def menu1():
             tool_choice="auto"
           )
 
-          print(resp)
           # tool call 추출
           tool_call = None
           tool_calls = resp.choices[0].message.tool_calls
@@ -84,23 +100,37 @@ def menu1():
               name, args = None, {}
 
             if name == "get_available_bikes" and "hub_name" in args:
-              structured = fetch_available_bikes(args["hub_name"])
+              # 0번째 : 실질적인 정보, 1번째 : status 코드
+              structured = fetch_available_bikes(args["hub_name"])[0]
               
               # For Log
               print(structured)
               
-              if structured.get("found"):
+              if not structured.get("error"):
                 # answer = f"'{structured['hub_name']}' 허브 이용가능 대수: {structured['available_bikes']}대"
-                answer = structured['message']
+                answer = structured['content']
               else:
                 msg = structured.get("error")
                 answer = f"'{structured['hub_name']}' 허브를 찾을 수 없어요." + (f"\n[API ERROR] {msg}" if msg else "")
+
+            elif name == "get_available_nearby_bikes":
+                structured = fetch_available_nearby_bikes(latitude, longitude)[0]
+
+                print(structured)
+
+                if not structured.get("error"):
+                  answer = structured['content']
+                else:
+                  msg = structured.get("error")
+                  answer = f"'{structured['hub_name']}' 허브를 찾을 수 없어요." + (f"\n[API ERROR] {msg}" if msg else "")
+
             else:
               answer = "(허브 이름을 추출하지 못했습니다)"
           else:
               # 함수 호출이 없으면 일반 텍스트 응답 출력
               answer = resp.choices[0].message.content or "(응답이 없습니다)"
               
+          
           
           # For Log
           _append("user", question)
@@ -110,7 +140,15 @@ def menu1():
         except Exception as e:
           answer = f"[ERROR] {type(e).__name__}: {e}"
 
-  return render_template("menu1.html", question=question, answer=answer, structured=structured)
+        return redirect(url_for('menu1.menu1'))
+
+  # return render_template("menu1.html", question=question, answer=answer, structured=structured)
+  history = _get_history()
+  return render_template(
+      "menu1.html",
+      structured=structured,
+      history=history,
+  )
 
 
 # 현재 시간 반환
@@ -136,6 +174,7 @@ def _get_history():
   return hist
 
 def _append(role, content):
+  content = (content or "").strip()
   hist = _get_history()
   hist.append({"role":role, "content":content, "ts" : _now_ts()})
   session[HIST_KEY] = _prune(hist)
@@ -144,4 +183,4 @@ def _append(role, content):
 def _clear_history():
   session[HIST_KEY] = []
   session.modified = True
-  
+

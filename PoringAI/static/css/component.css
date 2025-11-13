@@ -1,0 +1,12 @@
+/* 버튼 보강 */
+.btn-primary{
+  background:var(--primary); border-color:var(--primary);
+}
+.btn-primary:focus, .btn:focus{
+  box-shadow:0 0 0 4px var(--ring) !important;
+}
+
+/* 자주 쓰는 유틸 */
+.text-muted{ color:var(--muted) !important; }
+.shadow-soft{ box-shadow:0 6px 14px rgba(0,0,0,.08); }
+.round-12{ border-radius:12px; }

@@ -1,0 +1,133 @@
+/* ===============================
+   Chat (scoped: .chat-page)
+   =============================== */
+
+/* 창 */
+.chat-page .chat-window{
+  min-height: calc(100vh - 140px);
+  padding: 12px 12px calc(var(--composer-h, 88px) + 12px);
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  background: linear-gradient(180deg, #fafbfc 0%, #fff 12%);
+  
+  scroll-padding-bottom: calc(var(--composer-h, 88px) + 24px);
+} 
+
+#chat-bottom-anchor{
+  display:block;
+  height:1px;
+  /* 앵커 자체에 여유를 줘서 스무스가 ‘조금 덜 내려가는’ 문제 방지 */
+  scroll-margin-bottom: calc(var(--composer-h, 88px) + 32px);
+}
+
+.chat-page .empty-hint{ text-align:center; font-size:.95rem; padding:24px 12px; }
+
+/* 메시지 라인(초콤팩트) */
+.chat-page .msg{
+  display:flex; align-items:flex-end; gap:4px;
+  margin:2px 0; max-width:100%;
+}
+.chat-page .msg.bot{ justify-content:flex-start; }
+.chat-page .msg.me { justify-content:flex-end; }
+
+/* 아바타(소형) */
+.chat-page .avatar{
+  width:20px; height:20px; flex:0 0 20px;
+  border-radius:50%; display:grid; place-items:center;
+  font-weight:700; font-size:.7rem; color:#fff; margin-bottom:2px;
+}
+.chat-page .msg.bot .avatar{ background: #bd0052; }
+.chat-page .msg.me  .avatar{ background:var(--primary); }
+
+/* 말풍선(초콤팩트) */
+.chat-page .bubble{
+  position:relative;
+  display:inline-flex; flex-direction:column; justify-content:center;
+  padding:4px 8px; line-height:1.15; border-radius:10px;
+  word-break:break-word; white-space:pre-line;
+  max-width:75%;
+  box-shadow:0 2px 10px rgba(0,0,0,.05);
+}
+.chat-page .msg.bot .bubble{
+  background:#f1f3f5; color:var(--text); border:1px solid #e9ecef;
+}
+.chat-page .msg.me .bubble{
+  background:var(--primary); color:#fff; border:1px solid rgba(0,0,0,.02);
+}
+
+/* 꼬리(축소) */
+.chat-page .msg.bot .bubble:after,
+.chat-page .msg.me  .bubble:after{
+  content:""; position:absolute; bottom:0; width:7px; height:7px;
+  transform:translateY(40%) rotate(45deg);
+}
+.chat-page .msg.bot .bubble:after{
+  left:-3px; background:#f1f3f5; border-left:1px solid #e9ecef; border-bottom:1px solid #e9ecef;
+}
+.chat-page .msg.me .bubble:after{ right:-3px; background:var(--primary); }
+
+/* 내용/메타 */
+.chat-page .bubble .content{ font-size:.9rem; padding:0; }
+.chat-page .bubble .meta{ margin-top:1px; font-size:.7rem; opacity:.7; text-align:right; }
+
+/* 입력 컴포저 */
+.chat-page .composer{
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: env(safe-area-inset-bottom, 0); /* iOS 홈 인디케이터 대응 */
+  width: 100%;
+  max-width: 390px;                          /* phone-wrapper 폭과 맞춤 */
+  z-index: 1000;
+
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 12%);
+  backdrop-filter: saturate(140%) blur(6px);
+  padding: 10px 12px 10px;                   /* 안전 여백은 bottom으로 처리 */
+  border-top: 1px solid #e9ecef;
+}
+.chat-page .composer-inner{
+  display:grid; grid-template-columns:1fr auto; gap:8px; align-items:end;
+}
+.chat-page .composer-input{
+  width:100%; max-height:160px; padding:12px; border-radius:12px;
+  border:1px solid #dee2e6; outline:none; resize:none; font-size:1rem; line-height:1.35;
+  transition:box-shadow .2s, border-color .2s; background:#fff;
+}
+.chat-page .composer-input:focus{ border-color:var(--primary); box-shadow:0 0 0 4px var(--ring); }
+.chat-page .composer-send{ height:44px; padding:0 14px; border-radius:12px; font-weight:600; border:none; }
+
+/* 스크롤바 */
+.chat-page .chat-window::-webkit-scrollbar{ width:10px; }
+.chat-page .chat-window::-webkit-scrollbar-thumb{
+  background:rgba(0,0,0,.15); border-radius:999px; border:3px solid transparent; background-clip:content-box;
+}
+
+/* 모바일 보정 */
+@media (max-width:575px){
+  .chat-page .chat-window{ padding:8px 8px 92px; }
+  .chat-page .composer-inner{ gap:6px; }
+}
+
+/* 다크 모드 */
+@media (prefers-color-scheme: dark){
+  .chat-page .chat-window{ background:linear-gradient(180deg, #0f141a 0%, #0f1218 12%); }
+  .chat-page .msg.bot .bubble{ border-color:#222833; }
+  .chat-page .composer{
+    background:linear-gradient(180deg, rgba(15,18,24,0) 0%, #0f1218 12%);
+    border-top-color:#222833;
+  }
+  .chat-page .composer-input{ background:#12161e; color:var(--text); border-color:#222833; }
+}
+
+/* ===== chat spacing balance ===== */
+.chat-page .msg {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+/* 같은 사람의 연속 메시지는 더 촘촘하게 */
+.chat-page .msg.me + .msg.me,
+.chat-page .msg.bot + .msg.bot {
+  margin-top: 4px;
+}

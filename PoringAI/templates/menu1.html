@@ -1,28 +1,47 @@
 {% extends "base.html" %}
 {% block title %}Chat - Poring AI{% endblock %}
 
-{% block content %}
-<h2 class="mb-3">Chat with Poring AI</h2>
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+{% endblock %}
 
-<form method="post" class="mb-3">
-  <div class="mb-2">
-    <label for="question" class="form-label">Your Message:</label>
-    <textarea name="question" id="question" class="form-control" rows="3">{{ question or "" }}</textarea>
+{% block body_class %}chat-page{% endblock %}
+
+{% block content %}
+
+<!-- 채팅창 -->
+<div class="chat-window mb-0" id="chat-window">
+  {% if history and history|length > 0 %}
+    {% for m in history %}
+      <div class="msg {{ 'me' if m.role == 'user' else 'bot' }}">
+        <div class="avatar">{{ 'Me' if m.role == 'user' else 'P' }}</div>
+        <div class="bubble">
+          <div class="content">{{ m.content | trim }}</div>
+          {% if m.ts %}
+            <div class="meta">{{ m.ts | hm }}</div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-hint text-muted">아직 대화가 없어요. 메시지를 입력해보세요.</div>
+  {% endif %}
+  <div id="chat-bottom-anchor" aria-hidden="true"></div>
+</div>
+
+<!-- 입력창 (하단 고정) -->
+<form method="post" id="chat-form" class="composer">
+  <input type="hidden" name="latitude">
+  <input type="hidden" name="longitude">
+
+  <div class="composer-inner">
+    <textarea name="question" id="question" class="composer-input" rows="1" placeholder="메시지를 입력하세요"></textarea>
+    <button type="submit" class="btn btn-primary composer-send" id="submit-btn">Send</button>
   </div>
-  <button type="submit" class="btn btn-primary">Send</button>
 </form>
 
-{% if answer %}
-<div class="card mb-3">
-  <div class="card-header">AI Response</div>
-  <div class="card-body">
-    <p class="card-text" style="white-space: pre-line;">{{ answer }}</p>
-  </div>
-</div>
-{% endif %}
-
-{% if structured %}
-<div class="card">
+<!-- {% if structured %}
+<div class="card mt-3">
   <div class="card-header">Query Result</div>
   <div class="card-body">
     <div>허브: {{ structured.hub_name }}</div>
@@ -30,7 +49,83 @@
     <div>이용가능 대수: {{ structured.available_bikes }}</div>
   </div>
 </div>
-{% endif %}
+{% endif %} -->
 
-<a href="{{ url_for('index') }}">Go back to Home</a>
+<script>
+  // === 스크롤 헬퍼 ===
+  const chatWindow  = document.getElementById('chat-window');
+  const bottomAnchor = document.getElementById('chat-bottom-anchor');
+
+  function scrollToBottom({ force=false } = {}) {
+    if (!chatWindow || !bottomAnchor) return;
+    // 사용자가 거의 바닥에 있을 때만 자동 스크롤 (원치 않는 점프 방지)
+    const slack = chatWindow.scrollHeight - chatWindow.scrollTop - chatWindow.clientHeight;
+    const nearBottom = slack < 120;
+    if (force || nearBottom) {
+      bottomAnchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }
+
+  // ① 최초 로드 시: 강제로 맨 아래
+  window.addEventListener('load', () => {
+    scrollToBottom({ force: true });
+
+    // ② 이미지가 뒤늦게 로드되며 높이가 늘어날 때도 재하단
+    chatWindow.querySelectorAll('img').forEach(img => {
+      if (img.complete) return;            // 이미 로드된 건 패스
+      img.addEventListener('load', () => { // 로드 뒤 살짝 지연 후 스크롤
+        setTimeout(() => scrollToBottom({ force: true }), 0);
+      });
+    });
+  });
+
+  // === textarea 자동 리사이즈 ===
+  const ta = document.getElementById('question');
+  const autoresize = () => {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
+  };
+  ['input','change'].forEach(ev => ta.addEventListener(ev, autoresize));
+  window.addEventListener('load', autoresize);
+
+  // === Enter로 전송 (Shift+Enter는 줄바꿈) ===
+  ta.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      document.getElementById('chat-form').dispatchEvent(new Event('submit', {cancelable:true}));
+    }
+  });
+
+  // === 위치 권한 + 전송 ===
+  const chatForm = document.getElementById('chat-form');
+  const submitBtn = document.getElementById('submit-btn');
+  const latInput = document.querySelector('input[name="latitude"]');
+  const lonInput = document.querySelector('input[name="longitude"]');
+
+  chatForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.textContent = '위치 찾는 중...';
+
+    const submitNow = () => chatForm.submit();
+
+    if (!navigator.geolocation) {
+      submitNow();
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        latInput.value = latitude;
+        lonInput.value = longitude;
+        submitNow();
+      },
+      // 에러시 정보 없이 그냥 전송
+      () => submitNow(),
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  });
+</script>
+
+
 {% endblock %}
