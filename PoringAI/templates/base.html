@@ -19,11 +19,35 @@
     <!-- 가운데 정렬용 wrapper -->
     <div class="phone-wrapper">
       <!-- Header -->
-      <nav class="navbar bg-light px-2">
-        <a href = "{{ url_for('index') }}" class="navbar-brand">Poring AI</a>
-        <button class="btn-menu" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuDrawer" aria-controls="menuDrawer">
-          <span class="navbar-toggler-icon"></span>
-        </button>
+      <nav class="navbar bg-light px-2 d-flex justify-content-between align-items-center">
+
+        <a href="{{ url_for('index') }}" class="navbar-brand">Poring AI</a>
+      
+        <div class="d-flex align-items-center" style="gap:10px;">
+      
+          {% if session.get('user_id') %}
+            <span class="text-muted small">
+              {{ session.get('user_id') }}님
+            </span>
+            <a class="btn btn-sm btn-outline-secondary"
+               href="{{ url_for('login.logout') }}">
+              로그아웃
+            </a>
+          {% else %}
+            <a class="btn btn-sm btn-primary"
+               href="{{ url_for('login.login') }}">
+              로그인
+            </a>
+          {% endif %}
+      
+          <button class="btn-menu" type="button"
+                  data-bs-toggle="offcanvas"
+                  data-bs-target="#menuDrawer"
+                  aria-controls="menuDrawer">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+      
+        </div>
       </nav>
   
       <!-- Offcanvas -->

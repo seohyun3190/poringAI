@@ -45,7 +45,7 @@ tools = [
     "type": "function",
     "function": {
       "name": "get_available_nearby_bikes",
-      "description": "자신 근처에 있는 허브의 이용가능 자전거 수를 조회한다."
+      "description": "자신 근처에 있는 허브의 이용가능 자전거 수를 조회한다. 질문에 자신의 근처를 묻는 것이 있어야한다."
     }
   }
 ]

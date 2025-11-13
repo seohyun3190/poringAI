@@ -34,5 +34,8 @@ def create_app(test_config = None):
 
   from .api import bp as api_bp
   app.register_blueprint(api_bp, url_prefix='/api')
+
+  from . import login
+  app.register_blueprint(login.bp)
   
   return app
